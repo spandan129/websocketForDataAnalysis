@@ -31,7 +31,7 @@ async function handleUserCreation() {
 
 async function setupWebSocket() {
     const userId = await handleUserCreation(); 
-    const socketStart = new Date().toISOString(); 
+    const socketStart = new Date(); 
     const socket = new WebSocket('ws://localhost:8000/ws/session');
 
     socket.onopen = () => {
@@ -39,19 +39,25 @@ async function setupWebSocket() {
     };
 
     function handleBeforeUnload(event) {
-        const sessionEnd = new Date().toISOString(); 
-        const sessionData = {
-            event: "on_close",
-            user_id: userId,
-            session_start: socketStart,
-            session_end: sessionEnd,
-            path_history: pathHistory, 
-        };
+      const sessionEnd = new Date();  
+      const sessionDuration = (sessionEnd - socketStart) / 1000;  
 
-        socket.send(JSON.stringify(sessionData)); 
+      // Determine if session is a bounce (less than 10 seconds and only one page in pathHistory)
+      const isBounce = sessionDuration < 10 && pathHistory.length === 1;
 
-        event.returnValue = 'Are you sure you want to leave?'; 
-    }
+      const sessionData = {
+          event: "on_close",
+          user_id: userId,
+          session_start: socketStart.toISOString(),
+          session_end: sessionEnd.toISOString(),
+          path_history: pathHistory,
+          bounce: isBounce  // Add bounce field based on both conditions
+      };
+
+      socket.send(JSON.stringify(sessionData)); 
+
+      event.returnValue = 'Are you sure you want to leave?'; 
+  }
 
     window.addEventListener('beforeunload', handleBeforeUnload); 
 
