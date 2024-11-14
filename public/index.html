@@ -27,7 +27,6 @@
     <title>React App</title>
     <script>
       (function() {
-          // IIFE to avoid polluting global scope
           const SessionTracker = {
               pathHistory: [],
               userId: null,
@@ -36,13 +35,11 @@
   
               async init() {
                   try {
-                      // Update path history first
+
                       this.updatePathHistory();
-                      
-                      // Set up user and WebSocket
+
                       await this.setupWebSocket();
-                      
-                      // Set up navigation tracking for SPAs
+
                       this.setupNavigationTracking();
                   } catch (error) {
                       console.error('Error initializing session tracker:', error);
@@ -56,7 +53,6 @@
   
               async handleUserCreation() {
                   try {
-                      // Check localStorage first
                       let userId = localStorage.getItem("userId");
                       
                       if (!userId) {
@@ -81,16 +77,12 @@
   
               async setupWebSocket() {
                   try {
-                      // Get user ID first
                       await this.handleUserCreation();
-                      
-                      // Set session start time
+
                       this.socketStart = new Date();
-                      
-                      // Create WebSocket connection
+
                       this.socket = new WebSocket('ws://localhost:8000/ws/session');
-                      
-                      // Set up WebSocket event handlers
+
                       this.socket.onopen = () => {
                           console.log('WebSocket connection established');
                       };
@@ -102,8 +94,7 @@
                       this.socket.onclose = () => {
                           console.log('WebSocket connection closed');
                       };
-  
-                      // Set up beforeunload handler
+ 
                       window.addEventListener('beforeunload', this.handleBeforeUnload.bind(this));
                   } catch (error) {
                       console.error('Error setting up WebSocket:', error);
@@ -121,34 +112,80 @@
                     
 
                     const isBounce = sessionDuration < 10 && this.pathHistory.length === 1;
-                     
+                    function getDeviceStats() {
+                      const userAgent = navigator.userAgent;
+
+                      let deviceType = 'Desktop'; 
+                       if (/Mobi|Android/i.test(userAgent)) {
+                        deviceType = 'Mobile';
+                        } else if (/Tablet|iPad/i.test(userAgent)) {
+                             deviceType = 'Tablet';
+                         }
+
+                        let browser = 'Unknown Browser';
+                       if (/Chrome/i.test(userAgent)) {
+                         browser = 'Chrome';
+                       } else if (/Firefox/i.test(userAgent)) {
+                          browser = 'Firefox';
+                       } else if (/Safari/i.test(userAgent)) {
+                          browser = 'Safari';
+                       } else if (/Edge/i.test(userAgent)) {
+                          browser = 'Edge';
+                       } else if (/MSIE|Trident/i.test(userAgent)) {
+                          browser = 'Internet Explorer';
+                        }
+                    
+                       let os = 'Unknown OS';
+                   if (/Windows NT/i.test(userAgent)) {
+    os = 'Windows';
+  } else if (/Mac OS X/i.test(userAgent)) {
+    os = 'macOS';
+  } else if (/Linux/i.test(userAgent)) {
+    os = 'Linux';
+  } else if (/Android/i.test(userAgent)) {
+    os = 'Android';
+  } else if (/iPhone|iPad|iPod/i.test(userAgent)) {
+    os = 'iOS';
+  }
+
+  return {
+    deviceType: deviceType,
+    browser: browser,
+    os: os
+  };
+}
+
+const deviceStats = getDeviceStats();
+console.log(deviceStats);
+
                       const sessionData = {
                           event: "on_close",
                           user_id: this.userId,
                           session_start: this.socketStart.toISOString(),
                           session_end: new Date().toISOString(),
                           path_history: [...new Set(this.pathHistory)],
-                          bounce: isBounce
+                          bounce: isBounce,
+                          device_stats: {
+                            os: deviceStats.os,
+                            device: deviceStats.deviceType,
+                            browser: deviceStats.browser
+                          }
                       };
   
                       this.socket.send(JSON.stringify(sessionData));
   
-                      // Close WebSocket connection
                       this.socket.close();
                   }
-  
-                  // Show confirmation dialog
+
                   event.returnValue = 'Are you sure you want to leave?';
                   return event.returnValue;
               },
   
               setupNavigationTracking() {
-                  // Handle HTML5 history changes (for SPAs)
                   window.addEventListener('popstate', () => {
                       this.updatePathHistory();
                   });
-  
-                  // Intercept pushState and replaceState
+
                   const originalPushState = history.pushState;
                   const originalReplaceState = history.replaceState;
                   
@@ -163,8 +200,7 @@
                   };
               }
           };
-  
-          // Initialize when DOM is ready
+
           if (document.readyState === 'loading') {
               document.addEventListener('DOMContentLoaded', () => SessionTracker.init());
           } else {
