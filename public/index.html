@@ -47,8 +47,13 @@
               },
   
               updatePathHistory() {
-                  const currentPath = window.location.pathname;
-                  this.pathHistory.push(currentPath);
+                
+                const currentPath = window.location.pathname;
+            console.log(currentPath, this.pathHistory[this.pathHistory.length - 1]);
+           if (currentPath !== this.pathHistory[this.pathHistory.length - 1]) {
+            this.pathHistory.push(currentPath);
+            }
+                  
               },
   
               async handleUserCreation() {
@@ -107,7 +112,7 @@
 
                     const sessionDuration = (new Date() - this.socketStart) / 1000;
 
-                    console.log(sessionDuration);
+                    console.log(sessionDuration, this.pathHistory);
 
                     
 
@@ -163,8 +168,9 @@ console.log(deviceStats);
                           user_id: this.userId,
                           session_start: this.socketStart.toISOString(),
                           session_end: new Date().toISOString(),
-                          path_history: [...new Set(this.pathHistory)],
+                          path_history: [...this.pathHistory],
                           bounce: isBounce,
+                          website: window.location.origin,
                           device_stats: {
                             os: deviceStats.os,
                             device: deviceStats.deviceType,
