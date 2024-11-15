@@ -32,9 +32,84 @@
               userId: null,
               socket: null,
               socketStart: null,
-  
+              userLocation: null,
+              referrerInfo: null,
+
+              getReferrerInfo() {
+        const referrer = document.referrer;
+
+        console.log(referrer)
+
+        const categorizeReferrer = (url) => {
+            if (!url) return 'direct';
+            
+            const socialMediaPlatforms = {
+                'facebook.com': 'Facebook',
+                'instagram.com': 'Instagram',
+                't.co': 'Twitter',
+                'twitter.com': 'Twitter',
+                'linkedin.com': 'LinkedIn',
+                'reddit.com': 'Reddit',
+                'pinterest.com': 'Pinterest',
+                'youtube.com': 'YouTube',
+                'tiktok.com': 'TikTok',
+                'google.com': 'Google',
+                'bing.com': 'Bing',
+                'yahoo.com': 'Yahoo'
+            };
+
+            try {
+                const urlObj = new URL(url);
+                const domain = urlObj.hostname.toLowerCase().replace('www.', '');
+
+                for (let [platformDomain, platformName] of Object.entries(socialMediaPlatforms)) {
+                    if (domain.includes(platformDomain)) {
+                        return platformName;
+                    }
+                }
+                
+                return domain;
+            } catch (e) {
+                return 'invalid_url';
+            }
+        };
+
+        return {
+            full_referrer: referrer,
+            source: categorizeReferrer(referrer),
+            referrer_domain: referrer ? new URL(referrer).hostname : null
+        };
+    },
+
+
+              getLocation() {
+        return new Promise((resolve, reject) => {
+            if (!navigator.geolocation) {
+                resolve(null);
+            }
+            
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    resolve({
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude
+                    });
+                },
+                (error) => {
+                    resolve(null);
+                }
+            );
+        });
+    },
               async init() {
                   try {
+                    this.referrerInfo = this.getReferrerInfo();
+
+                    console.log(this.referrerInfo)
+
+                      this.userLocation = await this.getLocation();
+
+                      console.log(this.userLocation)
 
                       this.updatePathHistory();
 
@@ -161,7 +236,7 @@
 }
 
 const deviceStats = getDeviceStats();
-console.log(deviceStats);
+zconsole.log(deviceStats);
 
                       const sessionData = {
                           event: "on_close",
@@ -171,6 +246,8 @@ console.log(deviceStats);
                           path_history: [...this.pathHistory],
                           bounce: isBounce,
                           website: window.location.origin,
+                          location: this.userLocation,
+                          referrer: this.referrerInfo,
                           device_stats: {
                             os: deviceStats.os,
                             device: deviceStats.deviceType,
